@@ -1,8 +1,8 @@
 import ephem
 
 # Coordenadas geográficas de Buenos Aires: latitud y longitud en grados decimales
-latitud_buenos_aires = '-34.6037'  # Latitud de Buenos Aires
-longitud_buenos_aires = '-58.3816'  # Longitud de Buenos Aires
+latitud_buenos_aires = '-34.36'  # Latitud de Buenos Aires
+longitud_buenos_aires = '-58.26'  # Longitud de Buenos Aires
 
 # Crear un observador para Buenos Aires
 observador_buenos_aires = ephem.Observer()

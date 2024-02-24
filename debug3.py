@@ -1,3 +1,4 @@
+import pygame
 import ephem
 import datetime
 
@@ -62,24 +63,145 @@ class Observatorio:
 
 
 Obs1 = Observatorio()
-Obs1.setGeoLatLong(lat='-34.6037',lon='-58.3816')
+Obs1.setGeoLatLong(lat='-34.36',lon='-58.26')
 
 fecha = Obs1.getFechaActualDate()
 HoraIni = datetime.time(0, 0, 0)
 fechaN = datetime.datetime.combine(fecha, HoraIni)
 
-
+azimutArr = []
+altitudArr = []
+fechas = []
 
 #Estadistica de la posicion de la luna en el transcurso del dia actual
 for i in range(0,24):
 	print("Horas Transcurridos : "+str(i))
-	print(fechaN)
+	print(str(fechaN) + " UTC")
+	fechaAuxLocal = fechaN - datetime.timedelta(hours=3)
+	print(str(fechaAuxLocal) + " LocalTime")
 	Obs1.setGeoDate(fecha_ingresada=fechaN)
 
 	Obs1.computeMoonCoords()
+
+	azimutCad = str(Obs1.getActualAzimut())
 	
-	print("Azimut = "+str(Obs1.getActualAzimut()))
-	print("Altitud = "+str(Obs1.getActualAltitud()))
+	altitudCad = str(Obs1.getActualAltitud())
+	
+
+	fechas.append(fechaAuxLocal)
+	azimutArr.append(azimutCad.split(':'))
+	altitudArr.append(altitudCad.split(':'))
+	
+	print("Altitud = " + altitudCad)
+	print("Azimut = " + azimutCad)
 	print("")
 
 	fechaN = fechaN + datetime.timedelta(hours=1)
+
+
+
+#Prueba de Grafica
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+def grados_minutos_segundos_a_decimal(grados, minutos, segundos):
+    return grados + minutos / 60 + segundos / 3600
+
+def polar_to_cartesian(azimut_grados, altitud_grados, azimut_minutos, azimut_segundos, altitud_minutos, altitud_segundos):
+    # Convertir azimut y altitud a grados decimales
+    azimut_decimal = grados_minutos_segundos_a_decimal(azimut_grados, azimut_minutos, azimut_segundos)
+    altitud_decimal = grados_minutos_segundos_a_decimal(altitud_grados, altitud_minutos, altitud_segundos)
+
+    # Convertir de grados a radianes
+    azimut_radianes = np.radians(azimut_decimal)
+    altitud_radianes = np.radians(90 - altitud_decimal)  # Convertir altitud a ángulo cenital
+
+    # Calcular coordenadas cartesianas
+    x = altitud_radianes * np.cos(azimut_radianes)
+    y = altitud_radianes * np.sin(azimut_radianes)
+    return x, y
+
+# Puntos de ejemplo relacionados con la posición lunar
+
+azimut_grados = []  # Azimut en grados
+azimut_minutos = []  # Azimut en minutos
+azimut_segundos = []  # Azimut en segundos
+altitud_grados = []   # Altitud en grados
+altitud_minutos = []   # Altitud en minutos
+altitud_segundos = []   # Altitud en segundos
+
+"""
+for i in range(len(azimutArr)):
+	azimut_grados.append(int(azimutArr[i][0]))  # Azimut en grados
+	azimut_minutos.append(float(azimutArr[i][1]))  # Azimut en minutos
+	azimut_segundos.append(float(azimutArr[i][2]))  # Azimut en segundos
+
+for i in range(len(altitudArr)):
+	altitud_grados.append(int(altitudArr[i][0]))   # Altitud en grados
+	altitud_minutos.append(float(altitudArr[i][1]))   # Altitud en minutos
+	altitud_segundos.append(float(altitudArr[i][2]))   # Altitud en segundos
+"""
+for i in range(24):
+	if (int(altitudArr[i][0]))>=0:
+		azimut_grados.append(int(azimutArr[i][0]))  # Azimut en grados
+		azimut_minutos.append(float(azimutArr[i][1]))  # Azimut en minutos
+		azimut_segundos.append(float(azimutArr[i][2]))  # Azimut en segundos
+
+		altitud_grados.append(int(altitudArr[i][0]))   # Altitud en grados
+		altitud_minutos.append(float(altitudArr[i][1]))   # Altitud en minutos
+		altitud_segundos.append(float(altitudArr[i][2]))   # Altitud en segundos
+
+
+
+# Convertir coordenadas polares a cartesianas
+coordenadas = []
+for azimut_g, altitud_g, azimut_m, altitud_m, azimut_s, altitud_s in zip(azimut_grados, altitud_grados, azimut_minutos, altitud_minutos, azimut_segundos, altitud_segundos):
+    x, y = polar_to_cartesian(azimut_g, altitud_g, azimut_m, azimut_s, altitud_m, altitud_s)
+    coordenadas.append((x, y))
+
+# Configuración de Pygame
+pygame.init()
+
+ANCHO = 600
+ALTO = 600
+BLANCO = (255, 255, 255)
+NEGRO = (0, 0, 0)
+FUENTE = pygame.font.SysFont("Arial", 24)
+
+pantalla = pygame.display.set_mode((ANCHO, ALTO))
+pygame.display.set_caption("Posición Lunar")
+
+reloj = pygame.time.Clock()
+
+terminado = False
+while not terminado:
+    for evento in pygame.event.get():
+        if evento.type == pygame.QUIT:
+            terminado = True
+
+    pantalla.fill(BLANCO)
+    
+    # Dibujar la circunferencia
+    pygame.draw.circle(pantalla, NEGRO, (ANCHO // 2, ALTO // 2), 160, 1)
+    
+    # Dibujar los puntos
+    i=0
+    for punto in coordenadas:
+        x = int(punto[0] * 100 + ANCHO // 2)
+        y = int(punto[1] * 100 + ALTO // 2)
+        pygame.draw.circle(pantalla, NEGRO, (x, y), 5)
+
+    # Mostrar etiquetas de tiempo
+        etiqueta = FUENTE.render(fechas[i].strftime("%H:%M"), True, NEGRO)
+        pantalla.blit(etiqueta, (x + 10, y - 10))
+        i += 1
+
+    
+    
+
+    pygame.display.flip()
+    reloj.tick(60)
+
+pygame.quit()
