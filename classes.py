@@ -1,4 +1,5 @@
 from config import *
+from functions import *
 import pygame as pg
 import sys
 import ephem
@@ -28,9 +29,17 @@ class Object:
 		elif self.typeClass == UNKNOW:
 			self.scale = 3
 			self.color = "GREY"
+		elif self.typeClass == MOON:
+			self.scale = 7
+			self.color = "GREY"
 
 	def run(self):
 		pg.draw.circle(self.screen,self.color,[self.posX,self.posY],self.scale)
+		if self.typeClass == MOON:
+			pg.draw.circle(self.screen,(144,144,144),[self.posX-3,self.posY+1],3)
+			pg.draw.circle(self.screen,(144,144,144),[self.posX,self.posY+3],2)
+			pg.draw.circle(self.screen,(144,144,144),[self.posX,self.posY-3],2)
+			pg.draw.circle(self.screen,(144,144,144),[self.posX+2,self.posY-2],2)
 
 
 
@@ -45,7 +54,7 @@ class Observatory:
 		self.actualObserver = ephem.Observer()
 
 	#
-	# Computing Funtions
+	# Computing Functions
 	#
 	
 	def computeMoonCoords(self):
@@ -54,7 +63,7 @@ class Observatory:
 		self.astro.compute(self.actualObserver)
 
 	#
-	# Seters Functions
+	# Setters Functions
 	#
 
 	def setGeoLatLong(self,lat,lon):
@@ -67,7 +76,7 @@ class Observatory:
 		self.actualObserver.date = ephem.Date(ingresedDate)
 
 	#
-	# Geters Functions
+	# Getters Functions
 	#
 
 	def getActualAzimutDegrees(self):
@@ -147,19 +156,11 @@ class EscenaryInit:
 		
 		# Objets init
 		self.border = CircleBorder(self.screen) 
-		self.object1 = Object(self.screen,self.border.centerCoords,PLANET)
+
+		
+		
 		# clock
 		self.clock = pg.time.Clock()
-
-		Obs1 = Observatory()
-		Obs1.setGeoLatLong(lat='-34.36',lon='-58.26')
-		Obs1.setGeoDate(Obs1.getActualUTCDate())
-		Obs1.computeMoonCoords()
-		print(Obs1.getActualDate())
-		print(Obs1.getActualAltitudDegrees())
-		print(Obs1.getActualAzimutDegrees())
-		print(Obs1.getActualAltitudRadians())
-		print(Obs1.getActualAzimutRadians())
 		
 
 	def check_events(self):
@@ -173,7 +174,41 @@ class EscenaryInit:
 		
 		#Objects Running
 		self.border.run()
-		self.object1.run()
+		
+		# Observer and object running
+
+		Obs1 = Observatory()
+		Obs1.setGeoLatLong(lat='-34.36',lon='-58.26')
+		
+		# Preddicts the trayectory object in the visible sky
+
+		fullDayTrayectory = datetime.datetime.combine(Obs1.getActualUTCDate(), datetime.time(0, 0, 0))
+
+		for i in range(0,24):
+			Obs1.setGeoDate(fullDayTrayectory) #UTC Date
+			Obs1.computeMoonCoords()
+
+			altitudAux = str(Obs1.getActualAltitudDegrees()).split(':')
+			azimutAux = str(Obs1.getActualAzimutDegrees()).split(':')
+
+			posY,posX = polar_to_cartesian(int(azimutAux[0]),int(altitudAux[0]),float(azimutAux[1]),float(azimutAux[2]),float(altitudAux[1]),float(altitudAux[2]))
+			
+			posX = posX*192 + (self.border.centerCoords[0])
+			posY = posY*192 + (self.border.centerCoords[1]+165)
+
+			if int(altitudAux[0]) >= 0:
+				
+				actualCoords = [posX,posY]
+						
+				object1 = Object(self.screen,actualCoords,MOON)
+				object1.run()
+				FONT1 = pygame.font.SysFont("Arial", 24)
+				fullDayTrayectoryArg = fullDayTrayectory - datetime.timedelta(hours=3)
+				actualTime = FONT1.render(fullDayTrayectoryArg.strftime("%H:%M"), True, "WHITE")
+				self.screen.blit(actualTime, (posX, posY))						
+
+			fullDayTrayectory = fullDayTrayectory + datetime.timedelta(hours=1)
+			
 
 		# swap buffers
 		pg.display.flip()

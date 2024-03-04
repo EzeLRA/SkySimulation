@@ -58,6 +58,14 @@ class Observatorio:
 		altitud_degrees = ephem.degrees(altitud) # Conversion de Radianes a Grados
 		return altitud_degrees
 
+	def getActualAzimutRad(self):
+		azimut = self.astro.az
+		return azimut.real
+
+	def getActualAltitudRad(self):
+		altitud = self.astro.alt
+		return altitud.real
+
 
 
 
@@ -71,6 +79,8 @@ fechaN = datetime.datetime.combine(fecha, HoraIni)
 
 azimutArr = []
 altitudArr = []
+altRadArr = []
+azRadArr = []
 fechas = []
 
 #Estadistica de la posicion de la luna en el transcurso del dia actual
@@ -94,6 +104,16 @@ for i in range(0,24):
 	
 	print("Altitud = " + altitudCad)
 	print("Azimut = " + azimutCad)
+	altR = str(Obs1.getActualAltitudRad())
+	azR = str(Obs1.getActualAzimutRad())
+	print("Altitud R = " + altR)
+	print("Azimut R = " + azR)
+	
+	auxAlt = altitudCad.split(':')
+	if int(auxAlt[0]) > 0 :
+		altRadArr.append(altR)
+		azRadArr.append(azR)
+
 	print("")
 
 	fechaN = fechaN + datetime.timedelta(hours=1)
@@ -161,6 +181,15 @@ for azimut_g, altitud_g, azimut_m, altitud_m, azimut_s, altitud_s in zip(azimut_
     x, y = polar_to_cartesian(azimut_g, altitud_g, azimut_m, azimut_s, altitud_m, altitud_s)
     coordenadas.append((x, y))
 
+"""
+j = 0
+for i in coordenadas:
+	print(str(i[1])+" = "+str(altRadArr[j]))
+	print(str(i[0])+" = "+str(azRadArr[j]))
+	print()
+	j += 1
+"""
+
 # Configuración de Pygame
 pygame.init()
 
@@ -191,6 +220,8 @@ while not terminado:
     for punto in coordenadas:
         x = int(punto[0] * 100 + ANCHO // 2)
         y = int(punto[1] * 100 + ALTO // 2)
+        #x = int(float(altRadArr[i]) * 100 + ANCHO // 2)
+        #y = int(float(azRadArr[i]) * 100 + (ALTO // 2)-400)
         pygame.draw.circle(pantalla, NEGRO, (x, y), 5)
 
     # Mostrar etiquetas de tiempo
